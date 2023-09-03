@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { ContactForm } from 'components/ContactForm/ContactForm';
 import { ContactList } from 'components/ContactList/ContactList';
@@ -6,44 +6,44 @@ import { Filter } from 'components/Filter/Filter';
 import { AppWrap } from './App.styled';
 
 const STORAGE_KEY = 'contacts';
+const INITIAL_CONTACTS = [
+  { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
+  { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
+  { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
+  { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
+];
 
-export class App extends Component {
-  state = {
-    contacts: [
-      { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-      { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-      { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-    ],
-    filter: '',
+export const App = () => {
+  const [contacts, setContaxts] = useState(INITIAL_CONTACTS);
+  const [filter, setFilter] = useState('');
+
+  useEffect(() => {
+    const firstRenderContacts = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (firstRenderContacts) {
+      setContaxts(firstRenderContacts);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (contacts === INITIAL_CONTACTS) {
+      return;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
+  }, [contacts]);
+
+  const handleChange = ({ value }) => {
+    setFilter(value);
   };
 
-  componentDidMount() {
-    const contacts = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (contacts) {
-      this.setState({ contacts });
-    }
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.contacts !== this.state.contacts) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state.contacts));
-    }
-  }
-
-  handleChange = ({ name, value }) => {
-    this.setState({ [name]: value });
-  };
-
-  handleSubmit = newContact => {
-    this.checkNewContact(newContact)
+  const handleSubmit = newContact => {
+    checkNewContact(newContact)
       ? alert(`${newContact.name} is already in contacts`)
-      : this.addNewContact(newContact);
+      : addNewContact(newContact);
   };
 
-  checkNewContact = newContact => {
+  const checkNewContact = newContact => {
     let isNameNew = false;
-    this.state.contacts.forEach(contact =>
+    contacts.map(contact =>
       contact.name.toLocaleLowerCase() === newContact.name.toLocaleLowerCase()
         ? (isNameNew = true)
         : isNameNew
@@ -51,40 +51,34 @@ export class App extends Component {
     return isNameNew;
   };
 
-  addNewContact = newContact => {
-    this.setState(prevState => {
-      return { contacts: [...prevState.contacts, newContact] };
-    });
+  const addNewContact = newContact => {
+    setContaxts([...contacts, newContact]);
   };
 
-  filter = () => {
-    const filterValue = this.state.filter.toLocaleLowerCase();
-    const filteredContacts = this.state.contacts.filter(contact =>
+  const handleFilter = () => {
+    const filterValue = filter.toLocaleLowerCase();
+    const filteredContacts = contacts.filter(contact =>
       contact.name.toLocaleLowerCase().includes(filterValue)
     );
     return filteredContacts;
   };
 
-  deleteContact = contactId => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== contactId),
-    }));
+  const deleteContact = contactId => {
+    setContaxts(contacts.filter(contact => contact.id !== contactId));
   };
 
-  render() {
-    const filteredContacts = this.filter();
-    return (
-      <AppWrap>
-        <h1>Phonebook</h1>
-        <ContactForm onSubmit={this.handleSubmit} />
-        <h2>Contacts</h2>
-        <Filter filterValue={this.state.filter} onChange={this.handleChange} />
-        <ContactList
-          storageKey={STORAGE_KEY}
-          contacts={filteredContacts}
-          onDelete={this.deleteContact}
-        />
-      </AppWrap>
-    );
-  }
-}
+  const filteredContacts = handleFilter();
+  return (
+    <AppWrap>
+      <h1>Phonebook</h1>
+      <ContactForm onSubmit={handleSubmit} />
+      <h2>Contacts</h2>
+      <Filter filterValue={filter} onChange={handleChange} />
+      <ContactList
+        storageKey={STORAGE_KEY}
+        contacts={filteredContacts}
+        onDelete={deleteContact}
+      />
+    </AppWrap>
+  );
+};
